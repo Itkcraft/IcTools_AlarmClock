@@ -144,12 +144,12 @@ fun DebugPage(onBack: () -> Unit) {
         SectionCard(title = "ログコンソール") {
             Box(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState())) {
                 androidx.compose.foundation.layout.Row(
-                    Modifier.padding(horizontal = 12.dp),
+                    Modifier.padding(start = 12.dp, end = 24.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     FilterChip(selected = filter == null, onClick = { filter = null }, label = { Text("すべて") })
-                    AppLog.Level.entries.forEach { l ->
-                        FilterChip(selected = filter == l, onClick = { filter = l }, label = { Text("${l.tag} 以上") })
+                    listOf(AppLog.Level.I to "情報", AppLog.Level.W to "警告", AppLog.Level.E to "エラー").forEach { (l, name) ->
+                        FilterChip(selected = filter == l, onClick = { filter = l }, label = { Text("$name以上") })
                     }
                 }
             }

@@ -33,6 +33,27 @@ object AlarmActions {
         AppLog.i(TAG, "deleted alarm $id")
     }
 
+    // ---- 一括操作 ----
+
+    fun bulkDelete(ctx: Context, ids: Set<Long>) {
+        ids.forEach { AlarmScheduler.cancel(ctx, it) }
+        Repository.updateAlarms { a, g -> a.filterNot { it.id in ids } to g }
+        AlarmScheduler.rescheduleAll(ctx)
+        AppLog.i(TAG, "bulk deleted ${ids.size}")
+    }
+
+    fun bulkEnable(ctx: Context, ids: Set<Long>, enabled: Boolean) {
+        Repository.updateAlarms { a, g -> a.map { if (it.id in ids) it.copy(enabled = enabled, skipAt = null) else it } to g }
+        AlarmScheduler.rescheduleAll(ctx)
+        AppLog.i(TAG, "bulk enabled=$enabled ${ids.size}")
+    }
+
+    fun bulkMove(ctx: Context, ids: Set<Long>, groupId: Long?) {
+        Repository.updateAlarms { a, g -> a.map { if (it.id in ids) it.copy(groupId = groupId) else it } to g }
+        AlarmScheduler.rescheduleAll(ctx)
+        AppLog.i(TAG, "bulk moved ${ids.size}")
+    }
+
     fun setEnabled(ctx: Context, alarm: Alarm, enabled: Boolean): String? {
         val updated = alarm.copy(enabled = enabled, skipAt = null)
         Repository.upsertAlarm(updated)

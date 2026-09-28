@@ -122,7 +122,8 @@ private fun RingContent(
                 Icon(Icons.Rounded.Alarm, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(56.dp))
             }
             Spacer(Modifier.height(32.dp))
-            Text(formatTime(now, use24h), fontSize = 72.sp, fontWeight = FontWeight.Light, color = MaterialTheme.colorScheme.onBackground)
+            val t = java.time.Instant.ofEpochMilli(now).atZone(java.time.ZoneId.systemDefault())
+            com.itkcraft.alarmclock.ui.components.TimeText(t.hour, t.minute, use24h, 72.sp, color = MaterialTheme.colorScheme.onBackground)
             Text(
                 info?.title ?: "",
                 style = MaterialTheme.typography.headlineSmall,

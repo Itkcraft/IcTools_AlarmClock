@@ -23,6 +23,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AlarmAdd
+import androidx.compose.material.icons.rounded.Checklist
+import androidx.compose.material3.FilledTonalButton
+import com.itkcraft.alarmclock.ui.components.SwipeToReveal
 import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Folder
@@ -67,7 +70,7 @@ import com.itkcraft.alarmclock.alarm.Schedule
 import com.itkcraft.alarmclock.data.Alarm
 import com.itkcraft.alarmclock.data.AlarmGroup
 import com.itkcraft.alarmclock.data.Repository
-import com.itkcraft.alarmclock.ui.formatHm
+import com.itkcraft.alarmclock.ui.components.TimeText
 import com.itkcraft.alarmclock.ui.formatNext
 import com.itkcraft.alarmclock.ui.repeatSummary
 import kotlinx.coroutines.delay
@@ -87,6 +90,7 @@ fun AlarmListScreen(
     }
     var menuOpen by remember { mutableStateOf(false) }
     var editGroup by remember { mutableStateOf<AlarmGroup?>(null) }
+    var bulkOpen by remember { mutableStateOf(false) }
 
     val sorted = remember(alarms) { alarms.sortedWith(compareBy({ it.hour }, { it.minute })) }
     val nextRing = remember(alarms, groups, now) {
@@ -100,7 +104,16 @@ fun AlarmListScreen(
         ) {
             item {
                 Column(Modifier.padding(horizontal = 8.dp, vertical = 4.dp)) {
-                    Text("アラーム", style = MaterialTheme.typography.headlineMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("アラーム", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.weight(1f))
+                        if (alarms.isNotEmpty()) {
+                            FilledTonalButton(onClick = { bulkOpen = true }, shape = MaterialTheme.shapes.large) {
+                                Icon(Icons.Rounded.Checklist, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text("一括操作")
+                            }
+                        }
+                    }
                     Text(
                         if (nextRing != null) "次のアラーム: ${formatNext(nextRing, settings.use24h)}（${AlarmActions.untilText(nextRing - now)}）"
                         else "ON のアラームはありません",
@@ -108,7 +121,7 @@ fun AlarmListScreen(
                         color = if (nextRing != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
-                        "タップで編集 ・ 長押しで次回スキップ",
+                        "タップで編集 ・ 長押しで次回スキップ ・ 右へスワイプで削除",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -134,6 +147,7 @@ fun AlarmListScreen(
                         onEditAlarm = { onEdit(it.id, group.id) },
                         onSkipAlarm = { onMessage(AlarmActions.toggleSkip(ctx, it)) },
                         onEnableAlarm = { a, on -> AlarmActions.setEnabled(ctx, a, on)?.let(onMessage) },
+                        onDeleteAlarm = { AlarmActions.delete(ctx, it.id); onMessage("削除しました") },
                         onAddAlarm = { onEdit(null, group.id) },
                     )
                 }
@@ -159,6 +173,7 @@ fun AlarmListScreen(
                     onClick = { onEdit(alarm.id, null) },
                     onLongClick = { onMessage(AlarmActions.toggleSkip(ctx, alarm)) },
                     onEnable = { AlarmActions.setEnabled(ctx, alarm, it)?.let(onMessage) },
+                    onDelete = { AlarmActions.delete(ctx, alarm.id); onMessage("削除しました") },
                 )
             }
         }
@@ -183,6 +198,16 @@ fun AlarmListScreen(
                 )
             }
         }
+    }
+
+    if (bulkOpen) {
+        BulkDialog(
+            alarms = sorted,
+            groups = groups,
+            use24h = settings.use24h,
+            onDismiss = { bulkOpen = false },
+            onMessage = onMessage,
+        )
     }
 
     editGroup?.let { g ->
@@ -223,7 +248,24 @@ fun AlarmCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onEnable: (Boolean) -> Unit,
+    onDelete: () -> Unit,
     inGroup: Boolean = false,
+) {
+    SwipeToReveal(onDelete = onDelete, shape = MaterialTheme.shapes.large) {
+        AlarmCardBody(alarm, active, now, use24h, onClick, onLongClick, onEnable, inGroup)
+    }
+}
+
+@Composable
+private fun AlarmCardBody(
+    alarm: Alarm,
+    active: Boolean,
+    now: Long,
+    use24h: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onEnable: (Boolean) -> Unit,
+    inGroup: Boolean,
 ) {
     val haptic = LocalHapticFeedback.current
     val skipped = Schedule.isSkipped(alarm, now)
@@ -246,12 +288,7 @@ fun AlarmCard(
     ) {
         Row(Modifier.padding(start = 20.dp, end = 12.dp, top = 14.dp, bottom = 14.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).alpha(alpha)) {
-                Text(
-                    formatHm(alarm.hour, alarm.minute, use24h),
-                    fontSize = 38.sp,
-                    fontWeight = FontWeight.Light,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
+                TimeText(alarm.hour, alarm.minute, use24h, 38.sp)
                 if (alarm.memo.isNotBlank()) {
                     Text(alarm.memo, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
@@ -299,6 +336,7 @@ private fun GroupCard(
     onEditAlarm: (Alarm) -> Unit,
     onSkipAlarm: (Alarm) -> Unit,
     onEnableAlarm: (Alarm, Boolean) -> Unit,
+    onDeleteAlarm: (Alarm) -> Unit,
     onAddAlarm: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
@@ -353,6 +391,7 @@ private fun GroupCard(
                         onClick = { onEditAlarm(a) },
                         onLongClick = { onSkipAlarm(a) },
                         onEnable = { onEnableAlarm(a, it) },
+                        onDelete = { onDeleteAlarm(a) },
                         inGroup = true,
                     )
                 }

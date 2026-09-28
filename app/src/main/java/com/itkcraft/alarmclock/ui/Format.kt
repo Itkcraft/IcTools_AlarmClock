@@ -63,3 +63,8 @@ fun repeatSummary(a: Alarm): String = when {
     a.days == setOf(DayOfWeek.SATURDAY, DayOfWeek.SUNDAY) -> if (a.repeat) "土日" else "土日（1回のみ）"
     else -> weekOrder.filter { it in a.days }.joinToString("・") { dayLabel(it) } + if (a.repeat) "" else "（1回のみ）"
 }
+
+/** 大きな時刻表示用: (AM/PM または null, "7:00") */
+fun hmParts(hour: Int, minute: Int, use24h: Boolean): Pair<String?, String> =
+    if (use24h) null to "%02d:%02d".format(hour, minute)
+    else (if (hour < 12) "AM" else "PM") to "%d:%02d".format(if (hour % 12 == 0) 12 else hour % 12, minute)

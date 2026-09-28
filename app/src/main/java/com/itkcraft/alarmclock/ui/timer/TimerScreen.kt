@@ -4,6 +4,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -80,15 +82,23 @@ fun TimerScreen() {
     )
     val endAt = timer.endAt ?: (now + remaining)
 
+    Column(Modifier.fillMaxSize()) {
+    Text(
+        "タイマー",
+        style = MaterialTheme.typography.headlineMedium,
+        modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 24.dp, top = 16.dp),
+    )
+    BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+    val minH = maxHeight
     Column(
         Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState())
+            .heightIn(min = minH)
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
     ) {
-        Text("タイマー", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.fillMaxWidth())
-        Spacer(Modifier.height(16.dp))
 
         // 残り時間リング
         val ringColor = MaterialTheme.colorScheme.primary
@@ -161,6 +171,7 @@ fun TimerScreen() {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(32.dp)) {
             OutlinedIconButton(
                 onClick = { TimerActions.reset(ctx) },
+                enabled = remaining > 0 || timer.running || timer.paused,
                 modifier = Modifier.size(64.dp),
                 shape = CircleShape,
             ) { Icon(Icons.Rounded.Delete, contentDescription = "削除（リセット）") }
@@ -181,23 +192,21 @@ fun TimerScreen() {
                     modifier = Modifier.size(44.dp),
                 )
             }
-            Spacer(Modifier.size(64.dp))
+            OutlinedIconButton(
+                onClick = { TimerActions.restoreLast() },
+                enabled = !timer.running && !timer.paused && timer.lastDurationMs > 0 && timer.durationMs != timer.lastDurationMs,
+                modifier = Modifier.size(64.dp),
+                shape = CircleShape,
+            ) { Icon(Icons.Rounded.History, contentDescription = "前回の時間に戻す") }
         }
 
-        Spacer(Modifier.height(20.dp))
-        if (!timer.running && !timer.paused && timer.lastDurationMs > 0 && timer.durationMs != timer.lastDurationMs) {
-            AssistChip(
-                onClick = { TimerActions.restoreLast() },
-                label = { Text("前回の ${formatDuration(timer.lastDurationMs)} に戻す") },
-                leadingIcon = { Icon(Icons.Rounded.History, null, Modifier.size(AssistChipDefaults.IconSize)) },
-                shape = MaterialTheme.shapes.large,
-            )
-        } else if (timer.lastDurationMs > 0) {
-            Text(
-                "前回: ${formatDuration(timer.lastDurationMs)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Spacer(Modifier.height(16.dp))
+        Text(
+            if (timer.lastDurationMs > 0) "前回: ${formatDuration(timer.lastDurationMs)}" else " ",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    }
     }
 }

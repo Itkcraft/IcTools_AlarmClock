@@ -25,7 +25,6 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,6 +47,7 @@ import com.itkcraft.alarmclock.data.Alarm
 import com.itkcraft.alarmclock.data.NoHeadphoneAction
 import com.itkcraft.alarmclock.data.Repository
 import com.itkcraft.alarmclock.data.ThemeMode
+import com.itkcraft.alarmclock.ui.components.AppSlider
 import com.itkcraft.alarmclock.ui.components.PreviewPlayer
 import com.itkcraft.alarmclock.ui.components.RowDivider
 import com.itkcraft.alarmclock.ui.components.SectionCard
@@ -90,7 +90,7 @@ fun SoundSettingsPage(onBack: () -> Unit) {
         SectionCard(title = "音量（メディア音）") {
             Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.AutoMirrored.Rounded.VolumeUp, null, tint = MaterialTheme.colorScheme.primary)
-                Slider(
+                AppSlider(
                     value = volume,
                     onValueChange = { volume = it },
                     onValueChangeFinished = { Repository.updateSettings { st -> st.copy(volume = volume.toInt().coerceIn(1, 100)) } },
@@ -165,12 +165,11 @@ fun SnoozeSettingsPage(onBack: () -> Unit) {
     SubPage("スヌーズ・消音", onBack) {
         SectionCard(title = "スヌーズの長さ") {
             Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Slider(
+                AppSlider(
                     value = snooze,
                     onValueChange = { snooze = it },
                     onValueChangeFinished = { Repository.updateSettings { st -> st.copy(snoozeMinutes = snooze.toInt()) } },
                     valueRange = 1f..30f,
-                    steps = 28,
                     modifier = Modifier.weight(1f),
                 )
                 Text("${snooze.toInt()}分", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp))
@@ -231,12 +230,12 @@ fun BehaviorSettingsPage(onBack: () -> Unit) {
             )
             if (s.gradualVolume) {
                 Row(Modifier.padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Slider(
+                    AppSlider(
                         value = ramp,
                         onValueChange = { ramp = it },
                         onValueChangeFinished = { Repository.updateSettings { st -> st.copy(gradualSeconds = ramp.toInt()) } },
                         valueRange = 5f..120f,
-                        steps = 22,
+                        step = 5f,
                         modifier = Modifier.weight(1f),
                     )
                     Text("${ramp.toInt()}秒", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 12.dp))
@@ -294,12 +293,12 @@ fun DisplaySettingsPage(onBack: () -> Unit) {
     SubPage("時刻表示・テーマ", onBack) {
         SectionCard(title = "時刻表示形式") {
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(16.dp)) {
-                listOf(true to "24時間", false to "12時間 AM/PM").forEachIndexed { i, (v, label) ->
+                listOf(true to "24時間", false to "12時間").forEachIndexed { i, (v, label) ->
                     SegmentedButton(
                         selected = s.use24h == v,
                         onClick = { Repository.updateSettings { it.copy(use24h = v) } },
                         shape = SegmentedButtonDefaults.itemShape(i, 2),
-                    ) { Text(label) }
+                    ) { Text(label, maxLines = 1) }
                 }
             }
             Hint("表示例: ${formatTime(now, s.use24h)}")
@@ -311,7 +310,7 @@ fun DisplaySettingsPage(onBack: () -> Unit) {
                         selected = s.theme == m,
                         onClick = { Repository.updateSettings { it.copy(theme = m) } },
                         shape = SegmentedButtonDefaults.itemShape(i, ThemeMode.entries.size),
-                    ) { Text(m.label()) }
+                    ) { Text(m.label(), maxLines = 1) }
                 }
             }
         }

@@ -47,7 +47,7 @@ fun NoHeadphoneAction.label() = when (this) {
 }
 
 fun ThemeMode.label() = when (this) {
-    ThemeMode.SYSTEM -> "端末に合わせる"
+    ThemeMode.SYSTEM -> "自動"
     ThemeMode.LIGHT -> "ライト"
     ThemeMode.DARK -> "ダーク"
 }

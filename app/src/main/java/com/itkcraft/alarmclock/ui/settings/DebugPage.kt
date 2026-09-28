@@ -149,7 +149,7 @@ fun DebugPage(onBack: () -> Unit) {
                 ) {
                     FilterChip(selected = filter == null, onClick = { filter = null }, label = { Text("すべて") })
                     listOf(AppLog.Level.I to "情報", AppLog.Level.W to "警告", AppLog.Level.E to "エラー").forEach { (l, name) ->
-                        FilterChip(selected = filter == l, onClick = { filter = l }, label = { Text("$name以上") })
+                        FilterChip(selected = filter == l, onClick = { filter = l }, label = { Text("${name}以上") })
                     }
                 }
             }
